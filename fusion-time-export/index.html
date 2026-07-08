@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<style>html { visibility: hidden; }</style>
+<script src="/auth-gate.js" defer></script>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eSUB Fusion Time Export Reformatting File</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; color: #222; font-size: 14px; }
+
+  header { background: #1a3a5c; color: white; padding: 16px 24px; }
+  header h1 { font-size: 18px; font-weight: 700; }
+  header p  { font-size: 12px; opacity: 0.75; margin-top: 2px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .hub-link {
+    color: #fff; font-size: 13px; font-weight: 600; text-decoration: none;
+    border: 1px solid rgba(255,255,255,0.5); border-radius: 6px; padding: 6px 14px;
+    white-space: nowrap; transition: background 0.15s;
+  }
+  .hub-link:hover { background: rgba(255,255,255,0.15); }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+
+  .card { background: white; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); margin-bottom: 20px; overflow: hidden; }
+  .card-header {
+    background: #3C4A5C; border-bottom: 1px solid #3C4A5C;
+    padding: 12px 18px; font-weight: 700; font-size: 13px; color: #fff;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .badge {
+    background: #fff; color: #3C4A5C; border-radius: 50%;
+    width: 20px; height: 20px; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;
+  }
+  .card-body { padding: 18px; }
+
+  /* Disabled card state for Step 3 */
+  .card.disabled { opacity: 0.45; pointer-events: none; }
+  .card.disabled .card-header { background: #eee; color: #999; }
+  .na-banner {
+    background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px;
+    padding: 8px 14px; font-size: 12px; color: #856404; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* Sub-sections inside Step 2 */
+  .sub-section { margin-bottom: 20px; }
+  .sub-label {
+    font-size: 11px; font-weight: 700; color: #fff;
+    background: #1a3a5c; border-radius: 4px;
+    padding: 3px 10px; display: inline-block; margin-bottom: 10px; letter-spacing: 0.4px;
+  }
+
+  /* 2A: Checkbox grid */
+  .check-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; }
+  .check-item {
+    display: flex; align-items: center; gap: 8px;
+    background: #f7f9fc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 7px 10px; cursor: pointer; transition: background 0.1s;
+  }
+  .check-item:hover { background: #eef2f7; }
+  .check-item.is-checked { background: #dce8f5; border-color: #1a3a5c; }
+  .check-item input[type=checkbox] { width: 15px; height: 15px; accent-color: #1a3a5c; cursor: pointer; flex-shrink: 0; }
+  .check-item label { font-size: 13px; cursor: pointer; flex: 1; }
+
+  /* 2B: Order list */
+  .order-rows { display: flex; flex-direction: column; gap: 5px; max-width: 380px; }
+  .order-row  { display: flex; align-items: center; gap: 10px; }
+  .row-num    { width: 22px; text-align: right; font-size: 12px; color: #999; font-weight: 700; flex-shrink: 0; }
+  .order-item {
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    background: #f7f9fc; border: 1px solid #e2e8f0; border-radius: 6px;
+    padding: 8px 12px; cursor: grab; user-select: none; transition: background 0.1s;
+  }
+  .order-item:hover { background: #eef2f7; }
+  .order-item.dragging { opacity: 0.35; }
+  .order-item.drag-over { border-color: #1a3a5c; background: #dce8f5; }
+  .order-item .handle   { color: #bbb; font-size: 16px; flex-shrink: 0; }
+  .order-item .col-name { font-size: 13px; flex: 1; }
+  .order-empty { color: #aaa; font-size: 13px; font-style: italic; padding: 8px 0; }
+
+  /* 2C: Header rename */
+  .rename-grid { display: grid; grid-template-columns: 22px 1fr auto 1fr; gap: 6px 10px; align-items: center; max-width: 520px; }
+  .rename-grid .rnum { font-size: 12px; color: #999; font-weight: 700; text-align: right; }
+  .rename-grid .orig { font-size: 12px; color: #555; font-style: italic; }
+  .rename-grid .arrow { text-align: center; color: #aaa; }
+  .rename-grid input { border: 1px solid #ccd4dc; border-radius: 5px; padding: 5px 8px; font-size: 12px; width: 100%; }
+  .rename-grid input:focus { outline: none; border-color: #1a3a5c; }
+  .rename-hdr { font-size: 11px; color: #888; font-weight: 700; }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed #b0bec5; border-radius: 8px; padding: 28px 32px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #1a3a5c; background: #eef2f7; }
+  .drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+  .drop-zone p { color: #666; font-size: 13px; }
+  .drop-zone strong { color: #1a3a5c; cursor: pointer; text-decoration: underline; }
+  #fileInput { display: none; }
+  .file-loaded-bar {
+    display: flex; align-items: center; gap: 10px; margin-top: 12px;
+    background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 6px;
+    padding: 8px 14px;
+  }
+  .file-loaded-bar span { color: #2e7d32; font-weight: 700; font-size: 13px; flex: 1; }
+  .btn-clear {
+    background: none; border: 1px solid #c62828; color: #c62828;
+    border-radius: 5px; padding: 3px 10px; font-size: 12px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-clear:hover { background: #ffebee; }
+
+  /* Form rows */
+  .form-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .form-row label { font-weight: 600; min-width: 150px; font-size: 13px; color: #444; }
+  .form-row select, .form-row input[type=text] {
+    border: 1px solid #ccd4dc; border-radius: 5px;
+    padding: 6px 10px; font-size: 13px; min-width: 200px; background: white;
+  }
+  .form-row select:focus, .form-row input[type=text]:focus { outline: none; border-color: #1a3a5c; }
+
+  /* PayID grid */
+  .payid-grid { display: grid; grid-template-columns: 160px 160px; gap: 8px 12px; align-items: center; max-width: 340px; }
+  .payid-grid label { font-weight: 600; font-size: 13px; }
+  .payid-grid input { border: 1px solid #ccd4dc; border-radius: 5px; padding: 6px 10px; font-size: 13px; width: 100%; }
+  .payid-grid input:focus { outline: none; border-color: #1a3a5c; }
+
+  /* Toggle */
+  .toggle-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .toggle-row > label:last-child { font-size: 13px; color: #444; cursor: pointer; }
+  .toggle { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #ccc; border-radius: 24px; transition: 0.3s; }
+  .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; }
+  .toggle input:checked + .toggle-slider { background: #1a3a5c; }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(20px); }
+
+  /* Radio tabs */
+  .radio-tabs { display: flex; gap: 0; margin-bottom: 14px; border: 1px solid #ccd4dc; border-radius: 6px; overflow: hidden; width: fit-content; }
+  .radio-tabs label { padding: 7px 16px; font-size: 13px; cursor: pointer; background: white; color: #555; border-right: 1px solid #ccd4dc; transition: all 0.15s; }
+  .radio-tabs label:last-child { border-right: none; }
+  .radio-tabs input[type=radio] { display: none; }
+  .radio-tabs input[type=radio]:checked + label { background: #1a3a5c; color: white; font-weight: 600; }
+
+  /* Cost code mapping table */
+  .mapping-table { display: flex; flex-direction: column; gap: 6px; max-width: 480px; margin-bottom: 10px; }
+  .mapping-row { display: flex; align-items: center; gap: 8px; }
+  .mapping-row input { flex: 1; border: 1px solid #ccd4dc; border-radius: 5px; padding: 6px 10px; font-size: 13px; }
+  .mapping-row input:focus { outline: none; border-color: #1a3a5c; }
+  .mapping-row .map-arrow { color: #aaa; font-size: 16px; flex-shrink: 0; }
+  .btn-remove { background: none; border: none; color: #c62828; font-size: 18px; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .btn-remove:hover { color: #8b0000; }
+  .btn-add-row { background: none; border: 1px dashed #1a3a5c; color: #1a3a5c; border-radius: 5px; padding: 5px 14px; font-size: 12px; cursor: pointer; }
+  .btn-add-row:hover { background: #eef2f7; }
+  .mapping-hdrs { display: flex; gap: 8px; font-size: 11px; color: #888; font-weight: 700; max-width: 480px; padding: 0 0 2px 0; }
+  .mapping-hdrs span { flex: 1; }
+  .mapping-hdrs .spacer { width: 52px; flex: none; }
+
+  /* Stats + Preview */
+  .stats { display: flex; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+  .stat-box { background: #f7f9fc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 16px; text-align: center; }
+  .stat-box .num { font-size: 22px; font-weight: 700; color: #1a3a5c; }
+  .stat-box .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+  .preview-wrap { overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px; max-height: 320px; overflow-y: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th { background: #1a3a5c; color: white; padding: 7px 10px; white-space: nowrap; position: sticky; top: 0; text-align: left; }
+  td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; white-space: nowrap; }
+  tr:hover td { background: #f7f9fc; }
+  .no-data { color: #aaa; text-align: center; padding: 32px; font-size: 13px; }
+
+  /* Buttons */
+  .btn { padding: 9px 20px; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+  .btn-primary { background: #1a3a5c; color: white; }
+  .btn-primary:hover { background: #15304e; }
+  .btn-primary:disabled { background: #9ab; cursor: not-allowed; }
+  .btn-secondary { background: #e2e8f0; color: #333; }
+  .btn-secondary:hover { background: #d0d8e4; }
+  .btn-success { background: #2e7d32; color: white; }
+  .btn-success:hover { background: #256427; }
+  .btn-success:disabled { background: #9ab; cursor: not-allowed; }
+  .btn-save { background: #f0f4ff; border: 1px solid #1a3a5c; color: #1a3a5c; }
+  .btn-save:hover { background: #dce8f5; }
+  .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+  .radio-group { display: flex; gap: 16px; align-items: center; }
+  .radio-group label { display: flex; align-items: center; gap: 5px; font-weight: normal; cursor: pointer; min-width: auto; }
+  .radio-group input[type=radio] { accent-color: #1a3a5c; }
+
+  .info-text { font-size: 12px; color: #666; margin-top: 6px; }
+  .tip { background: #e8f4fd; border-left: 3px solid #1a3a5c; padding: 8px 12px; font-size: 12px; color: #444; border-radius: 0 4px 4px 0; margin-bottom: 14px; }
+  .divider { border: none; border-top: 1px solid #e8edf3; margin: 18px 0; }
+
+  #statusMsg { font-size: 12px; color: #2e7d32; margin-left: 8px; font-weight: 600; }
+  #statusMsg.error { color: #c62828; }
+
+  .save-note { font-size: 11px; color: #777; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>eSUB Fusion Time Export Reformatting File</h1>
+    <p>Import a timecard export → configure your format → export as CSV or TXT</p>
+  </div>
+  <a class="hub-link" href="https://tools.esub.com/">&larr; eSUB Tools</a>
+</header>
+
+<div class="container">
+
+  <div style="background:white; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.1); padding:16px 20px; margin-bottom:20px; border-left:4px solid #2c5f2e; font-size:13px; color:#444; line-height:1.6;">
+    Use this formatter to transform your eSUB time export into the format your accounting platform requires. Upload your export for the pay period, choose which columns to include, set the order, and rename any headers or codes to match what your system expects. On your first run, click <strong>Save Settings</strong> — your configuration will be ready to go for the next pay period.
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="card">
+    <div class="card-header"><span class="badge">1</span> Import eSUB Fusion Export</div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropZone">
+        <div class="icon">📂</div>
+        <p>Drag &amp; drop your eSUB Fusion CSV here, or <strong onclick="document.getElementById('fileInput').click()">browse to select a file</strong></p>
+        <input type="file" id="fileInput" accept=".csv,.txt">
+      </div>
+      <div class="file-loaded-bar" id="fileLoadedBar" style="display:none;">
+        <span id="fileLoadedMsg"></span>
+        <button class="btn-clear" onclick="clearFile()">✕ Clear file</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card">
+    <div class="card-header"><span class="badge">2</span> Columns — Select, Order, and Rename</div>
+    <div class="card-body">
+      <div id="step2Placeholder" style="color:#aaa; font-size:13px; font-style:italic; padding:8px 0;">
+        Import a file in Step 1 to configure columns.
+      </div>
+      <div id="step2Config" style="display:none;">
+
+        <!-- 2A -->
+        <div class="sub-section">
+          <div class="sub-label">A &nbsp;·&nbsp; SELECT COLUMNS TO INCLUDE</div>
+          <div class="check-grid" id="checkGrid"></div>
+          <div class="btn-row" style="margin-top:10px;">
+            <button class="btn btn-secondary" onclick="selectAllCols(true)">Select All</button>
+            <button class="btn btn-secondary" onclick="selectAllCols(false)">Deselect All</button>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 2B -->
+        <div class="sub-section">
+          <div class="sub-label">B &nbsp;·&nbsp; DRAG TO SET COLUMN ORDER</div>
+          <div class="order-rows" id="orderList">
+            <div class="order-empty">Select columns above to set their order here.</div>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 2C -->
+        <div class="sub-section">
+          <div class="toggle-row" style="margin-bottom:10px;">
+            <label class="toggle">
+              <input type="checkbox" id="includeHeaderRow" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <label for="includeHeaderRow"><strong>Include a header row in the output</strong></label>
+          </div>
+          <div id="renameSection">
+            <div class="sub-label">C &nbsp;·&nbsp; RENAME HEADERS (OPTIONAL)</div>
+            <div class="tip" style="margin-bottom:10px;">Leave blank to keep the default name. Only needed if your accounting platform expects specific column names.</div>
+            <div class="rename-grid" id="renameGrid">
+              <span></span>
+              <span class="rename-hdr">DEFAULT NAME</span>
+              <span></span>
+              <span class="rename-hdr">CUSTOM NAME (optional)</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Name Format — always visible, greyed out when N/A -->
+  <div class="card" id="step3Card">
+    <div class="card-header"><span class="badge">3</span> Employee Name Format</div>
+    <div class="card-body">
+      <div class="na-banner" id="step3Banner" style="display:none;">
+        ⚠️ Employee Name is not selected in Step 2A — this setting has no effect until it is.
+      </div>
+      <div class="form-row">
+        <label>Name Format</label>
+        <select id="nameFormat">
+          <option value="last_first">Last, First &nbsp;(e.g., Doe, Jane)</option>
+          <option value="first_last">First Last &nbsp;(e.g., Jane Doe)</option>
+          <option value="last_first_nospace">Last First &nbsp;(e.g., Doe Jane)</option>
+          <option value="first_only">First Name only</option>
+          <option value="last_only">Last Name only</option>
+        </select>
+      </div>
+      <p class="info-text">Applies to the Employee Name column. Default is Last, First.</p>
+    </div>
+  </div>
+
+  <!-- STEP 4: Pay Types -->
+  <div class="card">
+    <div class="card-header"><span class="badge">4</span> Pay Type Labels</div>
+    <div class="card-body">
+      <div class="tip">eSUB uses REG, OT, and DT. Enter what your accounting platform expects. Leave blank to keep the original.</div>
+      <div class="payid-grid">
+        <label>REG (Regular) →</label>
+        <input type="text" id="mapREG" placeholder="keep as REG" maxlength="20">
+        <label>OT (Overtime) →</label>
+        <input type="text" id="mapOT" placeholder="keep as OT" maxlength="20">
+        <label>DT (Double Time) →</label>
+        <input type="text" id="mapDT" placeholder="keep as DT" maxlength="20">
+      </div>
+      <p class="info-text" style="margin-top:10px;">Examples: RT / OT / DBL &nbsp;|&nbsp; 1 / 2 / 3 &nbsp;|&nbsp; Regular / Overtime / Double</p>
+    </div>
+  </div>
+
+  <!-- STEP 5: Zero Hours -->
+  <div class="card">
+    <div class="card-header"><span class="badge">5</span> Zero-Hour Rows</div>
+    <div class="card-body">
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="filterZeroHours" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <label for="filterZeroHours">Skip rows where Hours = 0</label>
+      </div>
+      <p class="info-text">eSUB exports a REG, OT, and DT row for every employee even when no hours were worked. This removes those empty rows.</p>
+    </div>
+  </div>
+
+  <!-- STEP 6: Cost Code Override -->
+  <div class="card">
+    <div class="card-header"><span class="badge">6</span> Cost Code Override</div>
+    <div class="card-body">
+      <div class="toggle-row" style="margin-bottom:14px;">
+        <label class="toggle">
+          <input type="checkbox" id="enableCostCodeOverride">
+          <span class="toggle-slider"></span>
+        </label>
+        <label for="enableCostCodeOverride">Override cost code values</label>
+      </div>
+
+      <div id="costCodeFields" style="display:none;">
+        <!-- Mode selector -->
+        <div style="margin-bottom:14px;">
+          <div class="radio-tabs">
+            <input type="radio" name="ccMode" id="ccModeAll" value="all" checked>
+            <label for="ccModeAll">Replace all with one value</label>
+            <input type="radio" name="ccMode" id="ccModeMap" value="map">
+            <label for="ccModeMap">Map specific codes</label>
+          </div>
+        </div>
+
+        <!-- Mode A: Replace all -->
+        <div id="ccModeAllFields">
+          <div class="form-row">
+            <label>Replace all Cost Code # with</label>
+            <input type="text" id="costCodeNumOverride" placeholder="e.g., 00-00 (blank = keep original)">
+          </div>
+          <div class="form-row">
+            <label>Replace all Cost Code Name with</label>
+            <input type="text" id="costCodeNameOverride" placeholder="e.g., General (blank = keep original)">
+          </div>
+          <p class="info-text">Every row will get this cost code regardless of what was in the original file.</p>
+        </div>
+
+        <!-- Mode B: Map specific codes -->
+        <div id="ccModeMapFields" style="display:none;">
+          <p class="info-text" style="margin-bottom:10px;">Enter the original cost code and what it should become. Codes not listed here will stay unchanged.</p>
+          <div class="mapping-hdrs">
+            <span>Original Cost Code #</span>
+            <span>→</span>
+            <span>Replace with</span>
+            <span class="spacer"></span>
+          </div>
+          <div class="mapping-table" id="ccMappingTable"></div>
+          <button class="btn-add-row" onclick="addCcMappingRow()">+ Add another code</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: Export Settings -->
+  <div class="card">
+    <div class="card-header"><span class="badge">7</span> Export Settings</div>
+    <div class="card-body">
+      <div class="form-row">
+        <label>Output Format</label>
+        <div class="radio-group">
+          <label><input type="radio" name="outputFormat" value="csv" checked> CSV (.csv)</label>
+          <label><input type="radio" name="outputFormat" value="txt"> Text (.txt)</label>
+        </div>
+      </div>
+      <div class="form-row">
+        <label>Delimiter</label>
+        <select id="delimiter">
+          <option value=",">Comma (,)</option>
+          <option value="&#9;">Tab</option>
+          <option value="|">Pipe (|)</option>
+          <option value=";">Semicolon (;)</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>Output Filename</label>
+        <input type="text" id="outputFilename" placeholder="transformed_timecard" style="min-width:240px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8: Preview + Export -->
+  <div class="card">
+    <div class="card-header"><span class="badge">8</span> Preview &amp; Export</div>
+    <div class="card-body">
+      <div class="btn-row" style="margin-bottom:6px;">
+        <button class="btn btn-primary" onclick="runPreview()">🔄 Preview Output</button>
+        <button class="btn btn-success" id="exportBtn" onclick="runExport()" disabled>⬇ Export File</button>
+        <button class="btn btn-save" onclick="saveSettings()">💾 Save Settings</button>
+        <button class="btn btn-save" onclick="downloadSettings()">⬇ Download Settings</button>
+        <label class="btn btn-save" style="cursor:pointer;">
+          📂 Load Settings
+          <input type="file" id="settingsFileInput" accept=".json" style="display:none;" onchange="loadSettingsFromFile(this)">
+        </label>
+        <span id="statusMsg"></span>
+      </div>
+      <p class="save-note">
+        💾 <strong>Save Settings</strong> stores your configuration in this browser only. Settings will be lost if you clear your browser's cache or open the file in a different browser.<br>
+        📁 Use <strong>Download Settings</strong> to save a backup file, and <strong>Load Settings</strong> to restore it on any computer.
+      </p>
+      <div id="statsArea" style="margin-top:16px;"></div>
+      <div class="preview-wrap" id="previewArea" style="margin-top:4px;">
+        <div class="no-data">Import a file and click Preview to see your output here.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Column definitions ──────────────────────────────────────────────
+const ALL_COLS = [
+  { key: 'Date',           label: 'Date' },
+  { key: 'Employee #',     label: 'Employee #' },
+  { key: 'Employee Name',  label: 'Employee Name' },
+  { key: 'Project #',      label: 'Project #' },
+  { key: 'Project Name',   label: 'Project Name' },
+  { key: 'Cost Code #',    label: 'Cost Code #' },
+  { key: 'Cost Code Name', label: 'Cost Code Name' },
+  { key: 'PayID',          label: 'Pay Type' },
+  { key: 'Hours',          label: 'Hours' },
+  { key: 'Units',          label: 'Units' },
+  { key: 'Labor Class',    label: 'Labor Class' },
+  { key: 'Shift',          label: 'Shift' },
+  { key: 'Comments',       label: 'Comments' },
+  { key: 'Status',         label: 'Status' },
+];
+const DEFAULT_CHECKED = new Set(['Date','Employee #','Employee Name','Project #','Cost Code #','PayID','Hours']);
+
+let rawData     = [];
+let checkedSet  = new Set(DEFAULT_CHECKED);
+let orderedKeys = ALL_COLS.map(c => c.key);
+let dragSrc     = null;
+
+// ── Init ────────────────────────────────────────────────────────────
+function init() {
+  const hasSaved = loadSettings();
+  if (hasSaved) {
+    document.getElementById('step2Placeholder').style.display = 'none';
+    document.getElementById('step2Config').style.display = 'block';
+    renderCheckGrid();
+    renderOrderList();
+    renderRenameGrid();
+  }
+  updateStep3State();
+
+  document.getElementById('enableCostCodeOverride').addEventListener('change', function() {
+    document.getElementById('costCodeFields').style.display = this.checked ? 'block' : 'none';
+  });
+  document.getElementById('includeHeaderRow').addEventListener('change', function() {
+    document.getElementById('renameSection').style.display = this.checked ? 'block' : 'none';
+  });
+  document.querySelectorAll('input[name="ccMode"]').forEach(r => {
+    r.addEventListener('change', updateCcModeUI);
+  });
+}
+
+// ── File import ──────────────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    rawData = parseCSV(e.target.result.replace(/^﻿/, ''));
+    document.getElementById('fileLoadedMsg').textContent = `✓ ${file.name}  (${rawData.length} rows)`;
+    document.getElementById('fileLoadedBar').style.display = 'flex';
+    document.getElementById('outputFilename').value = file.name.replace(/\.(csv|txt)$/i, '') + '_transformed';
+    document.getElementById('step2Placeholder').style.display = 'none';
+    document.getElementById('step2Config').style.display = 'block';
+    renderCheckGrid();
+    renderOrderList();
+    renderRenameGrid();
+    applyRenames();
+    setStatus('File loaded. Click Preview to see output.', false);
+    saveSettings();
+  };
+  reader.readAsText(file);
+}
+
+function clearFile() {
+  rawData = [];
+  fileInput.value = '';
+  document.getElementById('fileLoadedMsg').textContent = '';
+  document.getElementById('fileLoadedBar').style.display = 'none';
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('previewArea').innerHTML = '<div class="no-data">Import a file and click Preview to see your output here.</div>';
+  document.getElementById('statsArea').innerHTML = '';
+  setStatus('File cleared.', false);
+}
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const hdrs = splitLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = splitLine(line);
+    const obj = {};
+    hdrs.forEach((h, i) => { obj[h.trim()] = deScientify((vals[i] || '').trim()); });
+    return obj;
+  });
+}
+
+function splitLine(line) {
+  const res = []; let inQ = false, cur = '';
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { res.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  res.push(cur);
+  return res;
+}
+
+// Excel saves some values in scientific notation (e.g. 1000 → 1.00E+03).
+// Convert them back to plain numbers so they export correctly.
+function deScientify(val) {
+  const s = val.trim();
+  if (/^-?\d+(\.\d+)?[Ee][+\-]?\d+$/.test(s)) {
+    const n = Number(s);
+    if (!isNaN(n)) {
+      return Number.isInteger(n) ? String(n) : parseFloat(n.toPrecision(15)).toString();
+    }
+  }
+  return val;
+}
+
+// ── 2A: Checkbox grid ───────────────────────────────────────────────
+function renderCheckGrid() {
+  const grid = document.getElementById('checkGrid');
+  grid.innerHTML = '';
+  ALL_COLS.forEach(col => {
+    const item = document.createElement('div');
+    item.className = 'check-item' + (checkedSet.has(col.key) ? ' is-checked' : '');
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.id = 'chk_' + col.key; cb.checked = checkedSet.has(col.key);
+    const lbl = document.createElement('label');
+    lbl.htmlFor = 'chk_' + col.key; lbl.textContent = col.label;
+    cb.addEventListener('change', () => {
+      if (cb.checked) checkedSet.add(col.key); else checkedSet.delete(col.key);
+      item.classList.toggle('is-checked', cb.checked);
+      renderOrderList(); renderRenameGrid(); updateStep3State();
+    });
+    item.appendChild(cb); item.appendChild(lbl); grid.appendChild(item);
+  });
+}
+
+function selectAllCols(state) {
+  if (state) ALL_COLS.forEach(c => checkedSet.add(c.key)); else checkedSet.clear();
+  renderCheckGrid(); renderOrderList(); renderRenameGrid(); updateStep3State();
+}
+
+// ── 2B: Order list ──────────────────────────────────────────────────
+function getOrderedSelected() { return orderedKeys.filter(k => checkedSet.has(k)); }
+
+function renderOrderList() {
+  const list = document.getElementById('orderList');
+  list.innerHTML = '';
+  const selected = getOrderedSelected();
+  if (!selected.length) { list.innerHTML = '<div class="order-empty">Select columns above to set their order here.</div>'; return; }
+  selected.forEach((key, idx) => {
+    const col = ALL_COLS.find(c => c.key === key);
+    const row = document.createElement('div'); row.className = 'order-row';
+    const num = document.createElement('span'); num.className = 'row-num'; num.textContent = idx + 1;
+    const item = document.createElement('div');
+    item.className = 'order-item'; item.draggable = true; item.dataset.key = key;
+    item.innerHTML = `<span class="handle">⠿</span><span class="col-name">${col.label}</span>`;
+    item.addEventListener('dragstart', e => { dragSrc = key; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    item.addEventListener('dragend', () => { item.classList.remove('dragging'); list.querySelectorAll('.order-item').forEach(el => el.classList.remove('drag-over')); });
+    item.addEventListener('dragover', e => { e.preventDefault(); list.querySelectorAll('.order-item').forEach(el => el.classList.remove('drag-over')); item.classList.add('drag-over'); });
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== key) {
+        const si = orderedKeys.indexOf(dragSrc), ti = orderedKeys.indexOf(key);
+        orderedKeys.splice(si, 1); orderedKeys.splice(ti, 0, dragSrc);
+        renderOrderList(); renderRenameGrid();
+      }
+    });
+    row.appendChild(num); row.appendChild(item); list.appendChild(row);
+  });
+}
+
+// ── 2C: Rename grid ─────────────────────────────────────────────────
+function renderRenameGrid() {
+  const grid = document.getElementById('renameGrid');
+  const selected = getOrderedSelected();
+  const saved = {};
+  grid.querySelectorAll('input[data-key]').forEach(inp => { if (inp.value.trim()) saved[inp.dataset.key] = inp.value.trim(); });
+  while (grid.children.length > 4) grid.removeChild(grid.lastChild);
+  selected.forEach((key, idx) => {
+    const col = ALL_COLS.find(c => c.key === key);
+    const num = document.createElement('span'); num.className = 'rnum'; num.textContent = idx + 1;
+    const orig = document.createElement('span'); orig.className = 'orig'; orig.textContent = col.label;
+    const arrow = document.createElement('span'); arrow.className = 'arrow'; arrow.textContent = '→';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = '(keep default)'; inp.dataset.key = key; inp.value = saved[key] || '';
+    grid.appendChild(num); grid.appendChild(orig); grid.appendChild(arrow); grid.appendChild(inp);
+  });
+}
+
+function getHeaderLabel(key) {
+  const inp = document.querySelector(`#renameGrid input[data-key="${key}"]`);
+  if (inp && inp.value.trim()) return inp.value.trim();
+  return ALL_COLS.find(c => c.key === key)?.label || key;
+}
+
+// ── Step 3 state ─────────────────────────────────────────────────────
+function updateStep3State() {
+  const active = checkedSet.has('Employee Name');
+  document.getElementById('step3Card').classList.toggle('disabled', !active);
+  document.getElementById('step3Banner').style.display = active ? 'none' : 'flex';
+}
+
+// ── Cost code mapping ────────────────────────────────────────────────
+function updateCcModeUI() {
+  const mode = document.querySelector('input[name="ccMode"]:checked').value;
+  document.getElementById('ccModeAllFields').style.display = mode === 'all' ? 'block' : 'none';
+  document.getElementById('ccModeMapFields').style.display = mode === 'map' ? 'block' : 'none';
+}
+
+function addCcMappingRow(from='', to='') {
+  const table = document.getElementById('ccMappingTable');
+  const row = document.createElement('div'); row.className = 'mapping-row';
+  const fromInp = document.createElement('input'); fromInp.type = 'text'; fromInp.placeholder = 'Original code'; fromInp.value = from; fromInp.dataset.role = 'from';
+  const arrow = document.createElement('span'); arrow.className = 'map-arrow'; arrow.textContent = '→';
+  const toInp = document.createElement('input'); toInp.type = 'text'; toInp.placeholder = 'Replace with'; toInp.value = to; toInp.dataset.role = 'to';
+  const removeBtn = document.createElement('button'); removeBtn.className = 'btn-remove'; removeBtn.textContent = '×'; removeBtn.title = 'Remove';
+  removeBtn.addEventListener('click', () => row.remove());
+  row.appendChild(fromInp); row.appendChild(arrow); row.appendChild(toInp); row.appendChild(removeBtn);
+  table.appendChild(row);
+}
+
+function getCcMappings() {
+  const mappings = [];
+  document.querySelectorAll('#ccMappingTable .mapping-row').forEach(row => {
+    const from = row.querySelector('[data-role="from"]').value.trim();
+    const to   = row.querySelector('[data-role="to"]').value.trim();
+    if (from) mappings.push({ from, to });
+  });
+  return mappings;
+}
+
+// ── Transform ───────────────────────────────────────────────────────
+function buildName(row) {
+  const fmt   = document.getElementById('nameFormat').value;
+  const first = (row['Employee First Name'] || '').trim();
+  const last  = (row['Employee Last Name']  || '').trim();
+  switch (fmt) {
+    case 'last_first':         return last && first ? `${last}, ${first}` : last || first;
+    case 'first_last':         return `${first} ${last}`.trim();
+    case 'last_first_nospace': return `${last} ${first}`.trim();
+    case 'first_only':         return first;
+    case 'last_only':          return last;
+    default:                   return last && first ? `${last}, ${first}` : last || first;
+  }
+}
+
+function applyCostCode(rawCode, rawName) {
+  const ccOn = document.getElementById('enableCostCodeOverride').checked;
+  if (!ccOn) return { num: rawCode, name: rawName };
+  const mode = document.querySelector('input[name="ccMode"]:checked').value;
+  if (mode === 'all') {
+    const overrideNum  = document.getElementById('costCodeNumOverride').value.trim();
+    const overrideName = document.getElementById('costCodeNameOverride').value.trim();
+    return { num: overrideNum || rawCode, name: overrideName || rawName };
+  } else {
+    const mappings = getCcMappings();
+    const match = mappings.find(m => m.from === rawCode);
+    return { num: match ? match.to : rawCode, name: rawName };
+  }
+}
+
+function transformRow(row) {
+  const mapREG = document.getElementById('mapREG').value.trim() || 'REG';
+  const mapOT  = document.getElementById('mapOT').value.trim()  || 'OT';
+  const mapDT  = document.getElementById('mapDT').value.trim()  || 'DT';
+  let payid = row['PayID'] || '';
+  if (payid === 'REG') payid = mapREG; else if (payid === 'OT') payid = mapOT; else if (payid === 'DT') payid = mapDT;
+  const cc = applyCostCode(row['Cost Code #'] || '', row['Cost Code Name'] || '');
+  return {
+    'Date': row['Date'] || '', 'Employee #': row['Employee #'] || '',
+    'Employee Name': buildName(row), 'Project #': row['Project #'] || '',
+    'Project Name': row['Project Name'] || '', 'Cost Code #': cc.num,
+    'Cost Code Name': cc.name, 'PayID': payid, 'Hours': row['Hours'] || '',
+    'Units': row['Units'] || '', 'Labor Class': row['Labor Class'] || '',
+    'Shift': row['Shift'] || '', 'Comments': row['Comments'] || '', 'Status': row['Status'] || '',
+  };
+}
+
+function getOutputRows() {
+  const filterZero = document.getElementById('filterZeroHours').checked;
+  const keys = getOrderedSelected();
+  let rows = filterZero ? rawData.filter(r => parseFloat(r['Hours'] || '0') !== 0) : rawData;
+  return rows.map(transformRow).map(row => { const out = {}; keys.forEach(k => { out[k] = row[k] || ''; }); return out; });
+}
+
+// ── Preview ─────────────────────────────────────────────────────────
+function runPreview() {
+  if (!rawData.length) { setStatus('Please import a file first.', true); return; }
+  const keys = getOrderedSelected();
+  if (!keys.length)   { setStatus('Please select at least one column.', true); return; }
+  const outputRows = getOutputRows();
+  const filterZero = document.getElementById('filterZeroHours').checked;
+  const withHdr    = document.getElementById('includeHeaderRow').checked;
+  const skipped    = rawData.length - outputRows.length;
+  document.getElementById('statsArea').innerHTML = `
+    <div class="stats">
+      <div class="stat-box"><div class="num">${rawData.length}</div><div class="lbl">Source Rows</div></div>
+      <div class="stat-box"><div class="num">${outputRows.length}</div><div class="lbl">Output Rows</div></div>
+      ${filterZero ? `<div class="stat-box"><div class="num">${skipped}</div><div class="lbl">Zero-Hour Rows Skipped</div></div>` : ''}
+      <div class="stat-box"><div class="num">${keys.length}</div><div class="lbl">Output Columns</div></div>
+    </div>`;
+  let html = '<table><thead>';
+  if (withHdr) html += '<tr>' + keys.map(k => `<th>${esc(getHeaderLabel(k))}</th>`).join('') + '</tr>';
+  html += '</thead><tbody>';
+  outputRows.slice(0, 50).forEach(row => { html += '<tr>' + keys.map(k => `<td>${esc(row[k] || '')}</td>`).join('') + '</tr>'; });
+  if (outputRows.length > 50) html += `<tr><td colspan="${keys.length}" style="text-align:center;color:#888;font-style:italic;padding:10px;">… and ${outputRows.length - 50} more rows</td></tr>`;
+  html += '</tbody></table>';
+  document.getElementById('previewArea').innerHTML = html;
+  document.getElementById('exportBtn').disabled = false;
+  setStatus(`Preview ready — ${outputRows.length} rows, ${keys.length} columns.`, false);
+}
+
+// ── Export ───────────────────────────────────────────────────────────
+function runExport() {
+  if (!rawData.length) { setStatus('No data to export.', true); return; }
+  const keys  = getOrderedSelected();
+  const rows  = getOutputRows();
+  const delim = document.getElementById('delimiter').value;
+  const withHdr = document.getElementById('includeHeaderRow').checked;
+  const fmt   = document.querySelector('input[name="outputFormat"]:checked').value;
+  const fname = (document.getElementById('outputFilename').value.trim() || 'transformed_timecard') + '.' + fmt;
+  const lines = [];
+  if (withHdr) lines.push(keys.map(k => wrap(getHeaderLabel(k), delim)).join(delim));
+  rows.forEach(row => lines.push(keys.map(k => wrap(row[k] || '', delim)).join(delim)));
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(new Blob([lines.join('\r\n')], { type: 'text/plain;charset=utf-8' })),
+    download: fname,
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+  setStatus(`✓ Exported ${rows.length} rows to ${fname}`, false);
+}
+
+function wrap(val, delim) {
+  const s = String(val || '');
+  return (s.includes(delim) || s.includes('"') || s.includes('\n')) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+// ── Settings persistence ─────────────────────────────────────────────
+function saveSettings() {
+  const renames = {};
+  document.querySelectorAll('#renameGrid input[data-key]').forEach(inp => { if (inp.value.trim()) renames[inp.dataset.key] = inp.value.trim(); });
+  const s = {
+    checkedKeys: [...checkedSet], orderedKeys,
+    nameFormat: document.getElementById('nameFormat').value,
+    mapREG: document.getElementById('mapREG').value,
+    mapOT:  document.getElementById('mapOT').value,
+    mapDT:  document.getElementById('mapDT').value,
+    filterZeroHours: document.getElementById('filterZeroHours').checked,
+    enableCostCodeOverride: document.getElementById('enableCostCodeOverride').checked,
+    ccMode: document.querySelector('input[name="ccMode"]:checked').value,
+    costCodeNumOverride:  document.getElementById('costCodeNumOverride').value,
+    costCodeNameOverride: document.getElementById('costCodeNameOverride').value,
+    ccMappings: getCcMappings(),
+    includeHeaderRow: document.getElementById('includeHeaderRow').checked,
+    delimiter: document.getElementById('delimiter').value,
+    outputFormat: document.querySelector('input[name="outputFormat"]:checked').value,
+    renames,
+  };
+  localStorage.setItem('esub_v3', JSON.stringify(s));
+  setStatus('✓ Settings saved — will be remembered next time you open this file.', false);
+}
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('esub_v3') || 'null');
+    if (!s) return false;
+    applySettingsObject(s);
+    return true;
+  } catch(e) { return false; }
+}
+
+function applySettingsObject(s) {
+  if (s.checkedKeys) checkedSet  = new Set(s.checkedKeys);
+  if (s.orderedKeys) orderedKeys = s.orderedKeys;
+  if (s.nameFormat)  document.getElementById('nameFormat').value = s.nameFormat;
+  if (s.mapREG)      document.getElementById('mapREG').value = s.mapREG;
+  if (s.mapOT)       document.getElementById('mapOT').value  = s.mapOT;
+  if (s.mapDT)       document.getElementById('mapDT').value  = s.mapDT;
+  if (s.filterZeroHours !== undefined) document.getElementById('filterZeroHours').checked = s.filterZeroHours;
+  if (s.enableCostCodeOverride) {
+    document.getElementById('enableCostCodeOverride').checked = true;
+    document.getElementById('costCodeFields').style.display = 'block';
+  }
+  if (s.ccMode) {
+    const r = document.querySelector(`input[name="ccMode"][value="${s.ccMode}"]`);
+    if (r) { r.checked = true; updateCcModeUI(); }
+  }
+  if (s.costCodeNumOverride)  document.getElementById('costCodeNumOverride').value  = s.costCodeNumOverride;
+  if (s.costCodeNameOverride) document.getElementById('costCodeNameOverride').value = s.costCodeNameOverride;
+  if (s.ccMappings) s.ccMappings.forEach(m => addCcMappingRow(m.from, m.to));
+  if (s.payIdMappings) {
+    const tbl = document.getElementById('payIdMappingTable');
+    if (tbl) { tbl.innerHTML = ''; s.payIdMappings.forEach(m => addPayIdMappingRow(m.from, m.to)); }
+  }
+  if (s.includeHeaderRow === false) {
+    document.getElementById('includeHeaderRow').checked = false;
+    document.getElementById('renameSection').style.display = 'none';
+  }
+  if (s.delimiter) document.getElementById('delimiter').value = s.delimiter;
+  if (s.outputFormat) { const r = document.querySelector(`input[name="outputFormat"][value="${s.outputFormat}"]`); if (r) r.checked = true; }
+  window._savedRenames = s.renames || {};
+  renderCheckGrid(); renderOrderList(); renderRenameGrid();
+  setTimeout(applyRenames, 60);
+  updateStep3State();
+}
+
+function applyRenames() {
+  const r = window._savedRenames || {};
+  Object.entries(r).forEach(([key, val]) => {
+    const inp = document.querySelector(`#renameGrid input[data-key="${key}"]`);
+    if (inp) inp.value = val;
+  });
+  window._savedRenames = null;
+}
+
+// ── Download / Load settings as JSON file ────────────────────────────
+function buildSettingsObject() {
+  const renames = {};
+  document.querySelectorAll('#renameGrid input[data-key]').forEach(inp => { if (inp.value.trim()) renames[inp.dataset.key] = inp.value.trim(); });
+  return {
+    checkedKeys: [...checkedSet], orderedKeys,
+    nameFormat:  document.getElementById('nameFormat').value,
+    mapREG: document.getElementById('mapREG').value,
+    mapOT:  document.getElementById('mapOT').value,
+    mapDT:  document.getElementById('mapDT').value,
+    filterZeroHours: document.getElementById('filterZeroHours').checked,
+    enableCostCodeOverride: document.getElementById('enableCostCodeOverride').checked,
+    ccMode: document.querySelector('input[name="ccMode"]:checked').value,
+    costCodeNumOverride:  document.getElementById('costCodeNumOverride').value,
+    costCodeNameOverride: document.getElementById('costCodeNameOverride').value,
+    ccMappings: getCcMappings(),
+    includeHeaderRow: document.getElementById('includeHeaderRow').checked,
+    delimiter:   document.getElementById('delimiter').value,
+    outputFormat: document.querySelector('input[name="outputFormat"]:checked').value,
+    renames,
+  };
+}
+
+function downloadSettings() {
+  const s = buildSettingsObject();
+  const blob = new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' });
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: 'fusion_transformer_settings.json',
+  });
+  a.click(); URL.revokeObjectURL(a.href);
+  setStatus('✓ Settings file downloaded.', false);
+}
+
+function loadSettingsFromFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const s = JSON.parse(e.target.result);
+      applySettingsObject(s);
+      localStorage.setItem('esub_v3', JSON.stringify(s));
+      setStatus('✓ Settings loaded from file.', false);
+    } catch(err) {
+      setStatus('Could not read settings file: ' + err.message, true);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function setStatus(msg, isError) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = msg; el.className = isError ? 'error' : '';
+  if (!isError) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 6000);
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  init();
+  setTimeout(applyRenames, 60);
+});
+</script>
+</body>
+</html>
