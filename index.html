@@ -10,11 +10,13 @@
   <style>
     /* eSUB brand palette (from esub.com) */
     :root {
-      --yellow: #f6d972;
-      --yellow-hover: #e8c74f;
-      --yellow-active: #fce79c;
-      --on-yellow: #0a121a;      /* text on a yellow fill */
-      --yellow-ink: #8a6a00;     /* yellow-toned text on light backgrounds */
+      /* Logo yellow. It is a FILL colour — as text on white it is 1.4:1, so
+         text/icons use --brand-text instead (5.4:1 on white; flips to the
+         yellow itself in dark mode, where the card goes slate). */
+      --brand: #f6d972;
+      --brand-hover: #efcd55;
+      --brand-active: #e0bb3c;
+      --brand-text: #8a6400;
       --slate: #323a42;
       --ink: #0a121a;
       --muted: #5a626a;
@@ -34,7 +36,7 @@
         --heading: #ffffff;
         --muted: #9aa4ad;
         --border: #3d4650;
-        --yellow-ink: #f6d972;
+        --brand-text: #f6d972;
       }
     }
     * { box-sizing: border-box; }
@@ -53,7 +55,7 @@
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-top: 4px solid var(--yellow);
+      border-top: 4px solid var(--brand);
       border-radius: 5px;
       max-width: 32rem;
       width: 100%;
@@ -68,7 +70,7 @@
       color: var(--heading);
       margin: 0 0 .25rem;
     }
-    .brand span { color: var(--yellow-ink); }
+    .brand span { color: var(--brand-text); }
     .tagline {
       font-size: .8rem;
       font-weight: 600;
@@ -84,8 +86,8 @@
     }
     .cta {
       display: inline-block;
-      background-color: var(--yellow);
-      color: var(--on-yellow);
+      background-color: var(--brand);
+      color: var(--ink);
       font-family: "Roboto", "Inter", sans-serif;
       font-weight: 700;
       font-size: 1rem;
@@ -94,14 +96,14 @@
       border-radius: 5px;
       transition: background-color .15s ease;
     }
-    .cta:hover, .cta:focus { background-color: var(--yellow-hover); }
-    .cta:active { background-color: var(--yellow-active); }
+    .cta:hover, .cta:focus { background-color: var(--brand-hover); }
+    .cta:active { background-color: var(--brand-active); }
     .contact {
       margin: 1.75rem 0 0;
       font-size: .95rem;
       color: var(--muted);
     }
-    .contact a { color: var(--yellow-ink); font-weight: 600; text-decoration: none; }
+    .contact a { color: var(--brand-text); font-weight: 600; text-decoration: none; }
     .contact a:hover { text-decoration: underline; }
   </style>
 </head>

@@ -9,16 +9,18 @@
   <title>eSUB Tools — sign in</title>
   <style>
     :root {
-      --yellow: #f6d972; --yellow-hover: #e8c74f; --yellow-active: #fce79c;
-      --on-yellow: #0a121a;   /* text on a yellow fill */
-      --yellow-ink: #8a6a00;  /* yellow-toned text on light backgrounds */
-      --danger: #c54232;
+      /* Logo yellow. It is a FILL colour — as text on white it is 1.4:1, so
+         text/icons use --brand-text instead (5.4:1 on white; flips to the
+         yellow itself in dark mode, where the card goes slate). */
+      --brand: #f6d972; --brand-hover: #efcd55; --brand-active: #e0bb3c;
+      --brand-text: #8a6400;
+      --err: #d32f2f;
       --ink: #0a121a; --muted: #5a626a; --border: #d7d7d7;
       --bg-soft: #f5f6f7; --card: #ffffff; --text: #323a42; --heading: #0a121a;
     }
     @media (prefers-color-scheme: dark) {
       :root { --bg-soft: #10191f; --card: #323a42; --text: #d7d7d7; --heading: #fff; --muted: #9aa4ad; --border: #3d4650;
-              --yellow-ink: #f6d972; --danger: #ff9282; }
+              --brand-text: #f6d972; --err: #ff7a7a; }
     }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; }
@@ -29,27 +31,27 @@
       line-height: 1.65; -webkit-font-smoothing: antialiased;
     }
     .card {
-      background: var(--card); border: 1px solid var(--border); border-top: 4px solid var(--yellow);
+      background: var(--card); border: 1px solid var(--border); border-top: 4px solid var(--brand);
       border-radius: 5px; max-width: 32rem; width: 100%; padding: 3rem 2.5rem; text-align: center;
       box-shadow: 0 1px 3px rgba(10,18,26,.06), 0 12px 32px rgba(10,18,26,.08);
     }
     .brand { font-size: 1.75rem; font-weight: 800; letter-spacing: -.02em; color: var(--heading); margin: 0 0 .25rem; }
-    .brand span { color: var(--yellow-ink); }
+    .brand span { color: var(--brand-text); }
     .tagline { font-size: .8rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 1.75rem; }
     p { color: var(--text); margin: 0 0 1.5rem; font-size: 1.02rem; }
     .cta {
-      display: inline-flex; align-items: center; gap: 10px; background-color: var(--yellow); color: var(--on-yellow);
+      display: inline-flex; align-items: center; gap: 10px; background-color: var(--brand); color: var(--ink);
       font-family: "Roboto","Inter",sans-serif; font-weight: 700; font-size: 1rem; text-decoration: none;
       padding: 14px 32px; border: none; border-radius: 5px; cursor: pointer; transition: background-color .15s ease;
     }
-    .cta:hover, .cta:focus { background-color: var(--yellow-hover); }
-    .cta:active { background-color: var(--yellow-active); }
+    .cta:hover, .cta:focus { background-color: var(--brand-hover); }
+    .cta:active { background-color: var(--brand-active); }
     .cta:disabled { background-color: var(--muted); color: #fff; cursor: progress; }
     .ms-logo { width: 18px; height: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
     .ms-logo span { display: block; width: 100%; height: 100%; }
     .ms-logo span:nth-child(1){background:#f25022;} .ms-logo span:nth-child(2){background:#7fba00;}
     .ms-logo span:nth-child(3){background:#00a4ef;} .ms-logo span:nth-child(4){background:#ffb900;}
-    .error { margin-top: 1rem; padding: 12px 14px; border-left: 3px solid var(--danger); background: rgba(197,66,50,.08); color: var(--danger); font-size: .9rem; border-radius: 4px; text-align: left; display: none; }
+    .error { margin-top: 1rem; padding: 12px 14px; border-left: 3px solid var(--err); background: rgba(211,47,47,.08); color: var(--err); font-size: .9rem; border-radius: 4px; text-align: left; display: none; }
   </style>
 </head>
 <body>
